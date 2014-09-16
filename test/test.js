@@ -12,7 +12,7 @@ app.use(bodyParser());
 app.use(morgan());
 
 
-var auth = require('./index').auth(redisClient, {ttl:60*60*24, tokenLength:32});
+var auth = require('../index').auth(redisClient, {ttl:60*60*24, tokenLength:32, debug: true});
 
 
 app.all('*', function(req, res, next) {
@@ -45,7 +45,6 @@ app.get('/signin', function(req, res) {
 
 app.get('/protected', auth.verifyToken, function(req, res) {
 	if (req._user) {
-		console.log(req._user);
 		return res.send(200, req._user);
 	}
 });
