@@ -1,0 +1,13 @@
+{
+  "name": "auth-token-redis",
+  "description": "Authentication module working with tokens stored in redis",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "express": "~4.1.1",
+    "json": "0.0.14",
+    "body-parser": "~1.0.2",
+    "morgan": "~1.0.1",
+    "redis": "~0.12.1"
+  }
+}
