@@ -31,7 +31,7 @@ app.get('/signin', function(req, res) {
 	//build userData to store with the token
 	var userData = {id:1, firstname: 'John', lastname: 'Doe'};
 
-	auth.createAndStoreToken(userData, 60*60*5, function(err, token) {
+	auth.createAndStoreToken(userData, function(err, token) {
 		if (err) {
 			console.log(err);
 

@@ -2,12 +2,35 @@ var crypto = require('crypto');
 
 exports.auth = function(redisClient, options) {
 
+	var _defaultOptions = {ttl:60*60*24, tokenLength: 32, debug: false};
+
 	/*
 	 * options: Object
 	 * options.ttl = time to live in secondes during when a token is valid
 	 * options.tokenLength = number of hex char in a token
+	 * options.debug = active or deactive the debug mode
 	 */
-	var _options = options;
+	var _options = {};
+
+	if (options == null) {
+		_options = _defaultOptions;
+	} 
+	else {
+		if (options.ttl != null && typeof options.ttl !== 'number') {
+			throw new Error('options.ttl is not a Number');
+		}
+		if (options.tokenLength != null && typeof options.tokenLength !== 'number') {
+			throw new Error('options.tokenLength is not a Number');
+		}
+		if (options.debug != null && typeof options.debug !== 'boolean') {
+			throw new Error('options.debug is not a Boolean');
+		}
+
+		_options.ttl = options.ttl || _defaultOptions.ttl;
+		_options.tokenLength = options.tokenLength || _defaultOptions.tokenLength;
+		_options.debug = options.debug || _defaultOptions.debug;
+	}
+
 
 	/*
 	 * redisClient: Object
@@ -20,7 +43,8 @@ exports.auth = function(redisClient, options) {
 	 * TokenHelper
 	 */
 	var tokenHelper = (function() {
-		var TOKEN_LENGTH = _options.tokenLength || 32;
+
+		var TOKEN_LENGTH = _options.tokenLength;
 
 		return {
 			/*
@@ -29,10 +53,16 @@ exports.auth = function(redisClient, options) {
 			*/
 			createToken: function(callback) {
 				crypto.randomBytes(TOKEN_LENGTH, function(ex, token) {
-					if (ex) callback(ex);
+					if (ex) {
+						callback(ex);
+					}
 
-					if (token) callback(null, token.toString('hex'));
-					else callback(new Error('Problem when generating token'));
+					if (token) {
+						callback(null, token.toString('hex'));
+					}
+					else {
+						callback(new Error('Problem when generating token'));
+					}
 				});
 			},
 
@@ -42,16 +72,24 @@ exports.auth = function(redisClient, options) {
 			* Returns the token
 			*/
 			extractTokenFromHeader: function(headers) {
-				if (headers == null) throw new Error('Header is null');
-				if (headers.authorization == null) throw new Error('Authorization header is null');
+				if (headers == null) {
+					throw new Error('Header is null');
+				}
+				if (headers.authorization == null) {
+					throw new Error('Authorization header is null');
+				}
 
 				var authorization = headers.authorization;
 				var authArr = authorization.split(' ');
-				if (authArr.length != 2) throw new Error('Authorization header value is not of length 2');
+				if (authArr.length != 2) {
+					throw new Error('Authorization header value is not of length 2');
+				}
 
 				// retrieve token
 				var token = authArr[1]; 
-				if (token.length != TOKEN_LENGTH * 2) throw new Error('Token length is not the expected one');
+				if (token.length != TOKEN_LENGTH * 2) {
+					throw new Error('Token length is not the expected one');
+				}
 
 				return token;
 			}
@@ -61,27 +99,30 @@ exports.auth = function(redisClient, options) {
 
 	var redisHelper = (function() {
 
+		var TTL = _options.ttl;
+
 		return {
 			/*
-			* Stores a token with user data for a ttl period of time
+			* Stores a token with user data for a TTL period of time
 			* token: String - Token used as the key in redis 
 			* data: Object - value stored with the token 
-			* ttl: Number - Time to Live in seconds (default: 24Hours)
 			* callback: Function
 			*/
-			setTokenWithData: function(token, data, ttl, callback) {
-				if (token == null) throw new Error('Token is null');
-				if (data != null && typeof data !== 'object') throw new Error('data is not an Object');
+			setTokenWithData: function(token, data, callback) {
+				if (token == null) { 
+					throw new Error('Token is null');
+				}
+				if (data != null && typeof data !== 'object') {
+					throw new Error('data is not an Object');
+				}
 
-				var userData = data || {};
-				userData._ts = new Date();
+				var _data = data || {};
+				_data._ts = new Date();
 
-				var timeToLive = ttl || _options.ttl;
-				if (timeToLive != null && typeof timeToLive !== 'number') throw new Error('TimeToLive is not a Number');
-
-
-				redisClient.setex(token, timeToLive, JSON.stringify(userData), function(err, reply) {
-					if (err) callback(err);
+				redisClient.setex(token, TTL, JSON.stringify(_data), function(err, reply) {
+					if (err) {
+						callback(err);	
+					}
 
 					if (reply) {
 						callback(null, true);
@@ -97,13 +138,21 @@ exports.auth = function(redisClient, options) {
 			* callback: Function - returns data
 			*/
 			getDataByToken: function(token, callback) {
-				if (token == null) callback(new Error('Token is null'));
+				if (token == null) {
+					callback(new Error('Token is null'));
+				}
 
-				redisClient.get(token, function(err, userData) {
-					if (err) callback(err);
+				redisClient.get(token, function(err, data) {
+					if (err) {
+						callback(err);
+					}
 
-					if (userData != null) callback(null, JSON.parse(userData));
-					else callback(new Error('Token Not Found'));
+					if (data != null) {
+						callback(null, JSON.parse(data));
+					}
+					else { 
+						callback(new Error('Token Not Found'));
+					}
 				});
 			},
 
@@ -115,16 +164,25 @@ exports.auth = function(redisClient, options) {
 				if (token == null) callback(new Error('Token is null'));
 
 				redisClient.del(token, function(err, reply) {
-					if (err) callback(err);
+					if (err) {
+						callback(err);
+					}
 
-					if (reply) callback(null, true);
-					else callback(new Error('Token not found'));
+					if (reply) {
+						callback(null, true);
+					}
+					else {
+						callback(new Error('Token not found'));
+					}
 				});
 			}
 		};
 	})();
 
 	return {
+		/*
+		* Middleware to verify the token and store the user data in req._user
+		*/
 		verifyToken: function(req, res, next) {
 			var headers = req.headers;
 			if (headers == null) return res.send(401);
@@ -133,13 +191,18 @@ exports.auth = function(redisClient, options) {
 			try {
 				var token = tokenHelper.extractTokenFromHeader(headers);
 			} catch (err) {
-				console.log(err);
+				if (_options.debug) {
+					console.log(err);
+				}
+
 				return res.send(401);
 			}
 
 			//Verify it in redis, set data in req._user
 			redisHelper.getDataByToken(token, function(err, data) {
-				if (err) return res.send(401);
+				if (err) {
+					return res.send(401);
+				}
 
 				req._user = data;
 
@@ -147,18 +210,26 @@ exports.auth = function(redisClient, options) {
 			});
 		},
 
-		createAndStoreToken: function(data, ttl, callback) {
+		/*
+		* Create a new token, stores it in redis with data during ttl time in seconds
+		* callback(err, token);
+		*/
+		createAndStoreToken: function(data, callback) {
 			data = data || {};
-			ttl = ttl || _options.ttl;
 
-			if (data != null && typeof data !== 'object') callback(new Error('data is not an Object'));
-			if (ttl != null && typeof ttl !== 'number') callback(new Error('ttl is not a valid Number'));
+			if (data != null && typeof data !== 'object') {
+				callback(new Error('data is not an Object'));
+			}
 
 			tokenHelper.createToken(function(err, token) {
-				if (err) callback(err);
+				if (err) { 
+					callback(err);
+				}
 
-				redisHelper.setTokenWithData(token, data, ttl, function(err, success) {
-					if (err) callback(err);
+				redisHelper.setTokenWithData(token, data, function(err, success) {
+					if (err) {
+						callback(err);
+					}
 
 					if (success) {
 						callback(null, token);
@@ -170,18 +241,27 @@ exports.auth = function(redisClient, options) {
 			});
 		},
 
+		/*
+		* Expires the token (remove from redis)
+		*/
 		expireToken: function(headers, callback) {
-			if (headers == null) callback(new Error('Headers are null'));
+			if (headers == null) {
+				callback(new Error('Headers are null'));
+			}
 
 			// Get token
 			try {
 				var token = tokenHelper.extractTokenFromHeader(headers);
 
-				if (token == null) callback(new Error('Token is null'));
+				if (token == null)  {
+					callback(new Error('Token is null'));
+				}
 
 				redisHelper.expireToken(token, callback);
 			} catch (err) {
-				console.log(err);
+				if (_options.debug) {
+					console.log(err);
+				}
 				return callback(err);
 			}	
 		}
