@@ -11,10 +11,6 @@ app.listen(PORT);
 app.use(bodyParser());
 app.use(morgan());
 
-
-var auth = require('../index').auth(redisClient, {ttl:60*60*24, tokenLength:32, debug: true});
-
-
 app.all('*', function(req, res, next) {
 	res.set('Access-Control-Allow-Origin', 'http://localhost');
 	res.set('Access-Control-Allow-Credentials', true);
@@ -23,6 +19,8 @@ app.all('*', function(req, res, next) {
 	if ('OPTIONS' == req.method) return res.send(200);
 	next();
 });
+
+var auth = require('../index').auth(redisClient, {ttl:60*60*24, tokenLength:32, debug: true});
 
 app.get('/signin', function(req, res) {
 
