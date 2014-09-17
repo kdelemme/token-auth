@@ -13,7 +13,7 @@ Works with `redis` and `nodejs`.
 
 Get the sources:
 ```bash
-npm install --save-dev token-io
+npm install --save-dev auth-token
 ```
 
 ## Tests
@@ -34,7 +34,7 @@ var options = {
 	debug: true
 };
 
-var auth = require('token-io').auth(redisClient, options);
+var auth = require('auth-token').auth(redisClient, options);
 
 app.get('/signin', function(req, res) {
 
