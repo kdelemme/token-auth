@@ -1,4 +1,4 @@
-# auth-token
+# token-auth nodejs module
 
 
 ## Description
@@ -13,7 +13,7 @@ Works with `redis` and `nodejs`.
 
 Get the sources:
 ```bash
-npm install --save-dev auth-token
+npm install --save-dev token-auth
 ```
 
 ## Tests
@@ -34,7 +34,7 @@ var options = {
 	debug: true
 };
 
-var auth = require('auth-token').auth(redisClient, options);
+var auth = require('token-auth').auth(redisClient, options);
 
 app.get('/signin', function(req, res) {
 
