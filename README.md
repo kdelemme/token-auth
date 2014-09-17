@@ -3,7 +3,7 @@
 
 ## Description
 
-Auth-token is a Token-based Authentication module. It generates tokens and stores them in redis with user informations. It verifies the provided token from HTTP Header (Authorization) in order to allow access to a protected end point api throught a middleware.
+Token-Auth is a Token-based Authentication module. It generates tokens and stores them in redis with user informations. It verifies the provided token from HTTP Header (Authorization) in order to allow access to a protected end point api throught a middleware.
 
 ## Requirements
 
