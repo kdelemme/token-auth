@@ -31,14 +31,6 @@ exports.auth = function(redisClient, options) {
 		_options.debug = options.debug || _defaultOptions.debug;
 	}
 
-
-	/*
-	 * redisClient: Object
-	 * represents a already configured redisClient
-	 */
-	var _redisClient = redisClient;
-
-
 	/*
 	 * TokenHelper
 	 */
@@ -48,9 +40,9 @@ exports.auth = function(redisClient, options) {
 
 		return {
 			/*
-			* Create a 32 bytes token - ASYNC
-			* callback(err, token) 
-			*/
+			 * Creates a random token
+			 * @param {Function} callback(err, token): generated token 
+			 */
 			createToken: function(callback) {
 				crypto.randomBytes(TOKEN_LENGTH, function(ex, token) {
 					if (ex) {
@@ -67,10 +59,11 @@ exports.auth = function(redisClient, options) {
 			},
 
 			/*
-			* Extract the token from the header Authorization.
-			* Authorization: TOKEN-MECHANISM Token
-			* Returns the token
-			*/
+			 * Extract the token from the header Authorization.
+			 * Authorization: TOKEN-MECHANISM Token
+			 * @param {Object} headers: the headers from express request object
+			 * returns the token
+			 */
 			extractTokenFromHeader: function(headers) {
 				if (headers == null) {
 					throw new Error('Header is null');
@@ -103,11 +96,11 @@ exports.auth = function(redisClient, options) {
 
 		return {
 			/*
-			* Stores a token with user data for a TTL period of time
-			* token: String - Token used as the key in redis 
-			* data: Object - value stored with the token 
-			* callback: Function
-			*/
+			 * Stores a token with user data for a TTL period of time
+			 * @param {String} token: Token used as the key in redis 
+			 * @param {Object} data: value stored with the token 
+			 * @param {Function} callback(err, boolean): true if data successfully set in redis with token
+			 */
 			setTokenWithData: function(token, data, callback) {
 				if (token == null) { 
 					throw new Error('Token is null');
@@ -133,10 +126,10 @@ exports.auth = function(redisClient, options) {
 			},
 
 			/*
-			* Gets the associated data of the token.
-			* token: String - token used as the key in redis
-			* callback: Function - returns data
-			*/
+			 * Gets the associated data of the token.
+			 * @param {String} token: token used as the key in redis
+			 * @param {Function} callback(err, data): returns data
+			 */
 			getDataByToken: function(token, callback) {
 				if (token == null) {
 					callback(new Error('Token is null'));
@@ -157,9 +150,10 @@ exports.auth = function(redisClient, options) {
 			},
 
 			/*
-			* Expires a token by deleting the entry in redis
-			* callback(null, true) if successfuly deleted
-			*/
+			 * Expires a token by deleting the entry in redis
+			 * @param {String} token: The token to expire
+			 * @param {Function} callback(err, boolean): true if successfully deleted
+			 */
 			expireToken: function(token, callback) {
 				if (token == null) callback(new Error('Token is null'));
 
@@ -181,8 +175,11 @@ exports.auth = function(redisClient, options) {
 
 	return {
 		/*
-		* Middleware to verify the token and store the user data in req._user
-		*/
+		 * Middleware to verify the token and store the user data in req._user
+		 * @param {Object} req: express request object
+		 * @param {Object} res: express result object
+		 * @param {Function} next: express next function 
+		 */
 		verifyToken: function(req, res, next) {
 			var headers = req.headers;
 			if (headers == null) return res.send(401);
@@ -211,14 +208,13 @@ exports.auth = function(redisClient, options) {
 		},
 
 		/*
-		* Create a new token, stores it in redis with data during ttl time in seconds
-		* callback(err, token);
-		*/
+		 * Create a new token, stores it in redis with data during ttl time in seconds
+		 * @param {Object} data: Data stores with the token in redis
+		 * @param {Function} callback(err, token): returns the token or an error.
+		 */
 		createAndStoreToken: function(data, callback) {
-			data = data || {};
-
-			if (data != null && typeof data !== 'object') {
-				callback(new Error('data is not an Object'));
+			if (data == null || (data != null && typeof data !== 'object')) {
+				callback(new Error('data is not a valid Object'));
 			}
 
 			tokenHelper.createToken(function(err, token) {
@@ -242,8 +238,10 @@ exports.auth = function(redisClient, options) {
 		},
 
 		/*
-		* Expires the token (remove from redis)
-		*/
+		 * Expires the token (remove from redis)
+		 * @param {Object} headers: headers from request.headers
+		 * @param {Function} callback(err, boolean): true if successfully deleted from redis
+		 */
 		expireToken: function(headers, callback) {
 			if (headers == null) {
 				callback(new Error('Headers are null'));

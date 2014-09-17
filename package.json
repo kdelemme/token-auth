@@ -1,13 +1,25 @@
 {
-  "name": "auth-token-redis",
-  "description": "Authentication module working with tokens stored in redis",
-  "version": "1.0.0",
-  "private": true,
+  "name": "token-auth",
+  "version": "0.0.8",
+  "description": "Authentication module working with tokens stored in redis with user data",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
   "dependencies": {
-    "express": "~4.1.1",
-    "json": "0.0.14",
-    "body-parser": "~1.0.2",
-    "morgan": "~1.0.1",
     "redis": "~0.12.1"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "keywords": [
+    "auth",
+    "token",
+    "redis",
+    "authentication",
+    "tokens"
+  ],
+  "author": "Kevin Delemme <kdelemme@gmail.com>",
+  "license": "MIT"
 }

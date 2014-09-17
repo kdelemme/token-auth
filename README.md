@@ -1,33 +1,78 @@
-# Token-based Authentication
+# auth-token
 
 
 ## Description
 
-Token-Auth is a Token-based Authentication system. It generates token and stores them in redis with user informations. It verifies provided token from HTTP Header (Authorization) in order to allow access to protected end point api.
+Auth-token is a Token-based Authentication module. It generates tokens and stores them in redis with user informations. It verifies the provided token from HTTP Header (Authorization) in order to allow access to a protected end point api throught a middleware.
 
+## Requirements
+
+Works with `redis` and `nodejs`.
 
 ## Installation
 
 Get the sources:
 ```bash
-git clone https://github.com/kdelemme/nodejs-token-auth.git
+npm install --save-dev token-io
 ```
 
-### NodeJS
+## Tests
 
-In order to start the nodejs server, we need express and node_redis dependencies.
-
-Install the nodejs dependencies:
 ```bash
-kevin@home$ npm install
-```
-
-Start the server:
-```bash
-kevin@home$ node app.js
+kevin@home$ mocha test/test.js
 ```
 
 ## Usage
+
+```javascript
+var redis = require('redis'); 
+var redisClient = redis.createClient(); 
+
+var options = {
+	ttl: 60*60*24,
+	tokenLength: 32,
+	debug: true
+};
+
+var auth = require('token-io').auth(redisClient, options);
+
+app.get('/signin', function(req, res) {
+
+	// verify credential (use POST)
+
+	// build userData to store with the token
+	var userData = {id:1, firstname: 'John', lastname: 'Doe'};
+
+	auth.createAndStoreToken(userData, function(err, token) {
+		if (err) {
+			console.log(err);
+
+			return res.send(400);
+		} 
+
+		// Send back token
+		return res.send(200, token);
+	});
+});
+
+app.get('/protected', auth.verifyToken, function(req, res) {
+	if (req._user) {
+		return res.send(200, req._user);
+	}
+});
+
+app.get('/expire', function(req, res) {
+
+	auth.expireToken(req.headers, function(err, success) {
+		if (err) {
+			console.log(err);
+			return res.send(401);
+		}
+
+		if (success) res.send(200);
+	}
+};
+```
 
 ### Generates a token and stores it
 ```bash
@@ -45,7 +90,6 @@ kevin@home$ curl --header 'Authorization: AUTH Generated_Token' http://localhost
 ```bash
 kevin@home$ curl --header 'Authorization: AUTH Generated_Token' http://localhost:3001/expire
 ```
-
 
 ## Stack
 
